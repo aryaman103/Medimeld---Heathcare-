@@ -2,7 +2,7 @@
 
 A privacy-first offline health app for wound analysis and SOAP note generation using on-device AI.
 
-## 🏥 Overview
+## Overview
 
 MediMeld Edge is a React Native tablet application that enables healthcare professionals to:
 
@@ -12,7 +12,7 @@ MediMeld Edge is a React Native tablet application that enables healthcare profe
 - **Store data locally** in SQLite for privacy
 - **Sync when online** via a FastAPI backend
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TB
@@ -43,7 +43,7 @@ graph TB
     end
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 medimeld-edge/
@@ -71,7 +71,7 @@ medimeld-edge/
     └── ci.yml
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -105,7 +105,7 @@ npx expo start
    - `wound_classifier.onnx` (~85MB)
    - `medllm.gguf` (~4.2GB)
 
-## 🔧 Configuration
+## Configuration
 
 ### Backend Configuration
 
@@ -125,7 +125,7 @@ app = FastAPI(
 const SERVER_URL = 'http://localhost:8000'; // Change for production
 ```
 
-## 📱 Features
+## Features
 
 ### Camera & Capture
 - High-quality photo capture
@@ -150,7 +150,7 @@ const SERVER_URL = 'http://localhost:8000'; // Change for production
 - **Offline Indicators**: Network status display
 - **Progress Feedback**: Loading states
 
-## 🔒 Privacy & Security
+## Privacy & Security
 
 ### Data Protection
 - **No Image Upload**: Only photo hashes synced
@@ -164,7 +164,7 @@ const SERVER_URL = 'http://localhost:8000'; // Change for production
 - **Medical Standards**: SOAP note format
 - **Audit Trail**: Complete sync history
 
-## 🤖 AI Models
+## AI Models
 
 ### Wound Classifier
 - **Model**: ViT-small-patch16-224
