@@ -8,22 +8,16 @@ class WoundSeverity(str, Enum):
     MILD = "mild"
     MODERATE = "moderate"
     SEVERE = "severe"
-    CRITICAL = "critical"
 
 class WoundType(str, Enum):
     """Wound classification types"""
     ABRASION = "abrasion"
     LACERATION = "laceration"
-    PUNCTURE = "puncture"
     BURN = "burn"
     ULCER = "ulcer"
-    SURGICAL = "surgical"
-    PRESSURE_SORE = "pressure_sore"
-    OTHER = "other"
 
 class NoteData(BaseModel):
     """Data model for a medical note"""
-    photo_hash: str = Field(..., description="SHA256 hash of the wound photo")
     wound_type: WoundType = Field(..., description="Classification of wound type")
     wound_severity: WoundSeverity = Field(..., description="Severity assessment")
     soap_note: str = Field(..., description="Generated SOAP note text")
@@ -32,7 +26,6 @@ class NoteData(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "photo_hash": "a1b2c3d4e5f6...",
                 "wound_type": "laceration",
                 "wound_severity": "moderate",
                 "soap_note": "Subjective: Patient presents with 3cm laceration on left forearm...",
@@ -42,7 +35,7 @@ class NoteData(BaseModel):
 
 class FailedNote(BaseModel):
     """Model for failed sync attempts"""
-    photo_hash: str
+    note_id: str
     error: str
 
 class SyncResponse(BaseModel):
@@ -59,7 +52,7 @@ class SyncResponse(BaseModel):
                 "failed_count": 1,
                 "failed_notes": [
                     {
-                        "photo_hash": "a1b2c3d4e5f6...",
+                        "note_id": "note_123",
                         "error": "Database constraint violation"
                     }
                 ],

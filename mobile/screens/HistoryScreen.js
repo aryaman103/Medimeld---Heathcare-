@@ -44,7 +44,7 @@ const HistoryScreen = ({ onBack }) => {
     setRefreshing(false);
   };
 
-  const handleDeleteNote = async (photoHash) => {
+  const handleDeleteNote = async (noteId) => {
     Alert.alert(
       'Delete Note',
       'Are you sure you want to delete this note?',
@@ -55,7 +55,7 @@ const HistoryScreen = ({ onBack }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteNote(photoHash);
+              await deleteNote(noteId);
               await loadNotes();
               Alert.alert('Success', 'Note deleted successfully');
             } catch (error) {
@@ -77,7 +77,6 @@ const HistoryScreen = ({ onBack }) => {
       case 'mild': return '#34C759';
       case 'moderate': return '#FF9500';
       case 'severe': return '#FF3B30';
-      case 'critical': return '#AF52DE';
       default: return '#8E8E93';
     }
   };
@@ -121,7 +120,7 @@ const HistoryScreen = ({ onBack }) => {
           )}
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => handleDeleteNote(note.photo_hash)}
+            onPress={() => handleDeleteNote(note.id)}
           >
             <Ionicons name="trash-outline" size={16} color="#FF3B30" />
           </TouchableOpacity>
@@ -141,9 +140,6 @@ const HistoryScreen = ({ onBack }) => {
       <View style={styles.noteFooter}>
         <Text style={styles.noteDate}>
           {formatDate(note.created_at)}
-        </Text>
-        <Text style={styles.noteHash}>
-          {note.photo_hash.substring(0, 16)}...
         </Text>
       </View>
     </View>
@@ -223,9 +219,14 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
+    margin: 16,
+    borderRadius: 12,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statItem: {
     flex: 1,
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#007AFF',
   },
   statLabel: {
@@ -254,27 +255,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8E8E93',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#8E8E93',
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 8,
-  },
   noteContainer: {
     backgroundColor: '#FFFFFF',
     margin: 16,
+    marginBottom: 8,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -334,10 +318,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
   },
-  noteHash: {
-    fontSize: 10,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
     color: '#8E8E93',
-    fontFamily: 'monospace',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 

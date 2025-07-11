@@ -24,7 +24,6 @@ class DatabaseManager:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS notes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    photo_hash TEXT UNIQUE NOT NULL,
                     wound_type TEXT NOT NULL,
                     wound_severity TEXT NOT NULL,
                     soap_note TEXT NOT NULL,
@@ -32,11 +31,6 @@ class DatabaseManager:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     synced_at TEXT DEFAULT NULL
                 )
-            """)
-            
-            # Create index for faster lookups
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_photo_hash ON notes(photo_hash)
             """)
             
             conn.commit()
@@ -51,11 +45,10 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO notes 
-                    (photo_hash, wound_type, wound_severity, soap_note, timestamp, synced_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO notes 
+                    (wound_type, wound_severity, soap_note, timestamp, synced_at)
+                    VALUES (?, ?, ?, ?, ?)
                 """, (
-                    note.photo_hash,
                     note.wound_type,
                     note.wound_severity,
                     note.soap_note,
@@ -65,7 +58,7 @@ class DatabaseManager:
                 
                 conn.commit()
                 conn.close()
-                logger.info(f"Note saved: {note.photo_hash}")
+                logger.info(f"Note saved: {note.wound_type} - {note.wound_severity}")
                 return True
                 
             except Exception as e:
@@ -80,7 +73,7 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 
                 cursor.execute("""
-                    SELECT photo_hash, wound_type, wound_severity, soap_note, timestamp, created_at, synced_at
+                    SELECT id, wound_type, wound_severity, soap_note, timestamp, created_at, synced_at
                     FROM notes
                     ORDER BY created_at DESC
                     LIMIT ? OFFSET ?
@@ -91,7 +84,7 @@ class DatabaseManager:
                 
                 return [
                     {
-                        "photo_hash": row[0],
+                        "id": row[0],
                         "wound_type": row[1],
                         "wound_severity": row[2],
                         "soap_note": row[3],
@@ -114,7 +107,7 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 
                 cursor.execute("""
-                    SELECT photo_hash, wound_type, wound_severity, soap_note, timestamp
+                    SELECT id, wound_type, wound_severity, soap_note, timestamp
                     FROM notes
                     WHERE synced_at IS NULL
                     ORDER BY created_at ASC
@@ -125,7 +118,7 @@ class DatabaseManager:
                 
                 return [
                     {
-                        "photo_hash": row[0],
+                        "id": row[0],
                         "wound_type": row[1],
                         "wound_severity": row[2],
                         "soap_note": row[3],
@@ -138,7 +131,7 @@ class DatabaseManager:
                 logger.error(f"Failed to retrieve unsynced notes: {e}")
                 return []
     
-    async def mark_synced(self, photo_hash: str) -> bool:
+    async def mark_synced(self, note_id: int) -> bool:
         """Mark a note as synced"""
         async with self._lock:
             try:
@@ -148,8 +141,8 @@ class DatabaseManager:
                 cursor.execute("""
                     UPDATE notes 
                     SET synced_at = ? 
-                    WHERE photo_hash = ?
-                """, (datetime.utcnow().isoformat(), photo_hash))
+                    WHERE id = ?
+                """, (datetime.utcnow().isoformat(), note_id))
                 
                 conn.commit()
                 conn.close()

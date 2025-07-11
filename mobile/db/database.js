@@ -13,7 +13,6 @@ export const initDatabase = async () => {
       tx.executeSql(
         `CREATE TABLE IF NOT EXISTS notes (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          photo_hash TEXT UNIQUE NOT NULL,
           wound_type TEXT NOT NULL,
           wound_severity TEXT NOT NULL,
           soap_note TEXT NOT NULL,
@@ -43,11 +42,10 @@ export const saveNote = async (noteData) => {
     
     db.transaction(tx => {
       tx.executeSql(
-        `INSERT OR REPLACE INTO notes 
-         (photo_hash, wound_type, wound_severity, soap_note, timestamp, image_uri)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO notes 
+         (wound_type, wound_severity, soap_note, timestamp, image_uri)
+         VALUES (?, ?, ?, ?, ?)`,
         [
-          noteData.photo_hash,
           noteData.wound_type,
           noteData.wound_severity,
           noteData.soap_note,
@@ -97,7 +95,7 @@ export const getUnsyncedNotes = async () => {
     
     db.transaction(tx => {
       tx.executeSql(
-        `SELECT photo_hash, wound_type, wound_severity, soap_note, timestamp
+        `SELECT id, wound_type, wound_severity, soap_note, timestamp
          FROM notes 
          WHERE synced_at IS NULL
          ORDER BY created_at ASC`,
@@ -115,7 +113,7 @@ export const getUnsyncedNotes = async () => {
 };
 
 // Mark note as synced
-export const markNoteSynced = async (photoHash) => {
+export const markNoteSynced = async (noteId) => {
   return new Promise((resolve, reject) => {
     const db = SQLite.openDatabase(DB_NAME);
     
@@ -123,8 +121,8 @@ export const markNoteSynced = async (photoHash) => {
       tx.executeSql(
         `UPDATE notes 
          SET synced_at = datetime('now')
-         WHERE photo_hash = ?`,
-        [photoHash],
+         WHERE id = ?`,
+        [noteId],
         (_, result) => {
           console.log('Note marked as synced');
           resolve(result);
@@ -139,14 +137,14 @@ export const markNoteSynced = async (photoHash) => {
 };
 
 // Delete note
-export const deleteNote = async (photoHash) => {
+export const deleteNote = async (noteId) => {
   return new Promise((resolve, reject) => {
     const db = SQLite.openDatabase(DB_NAME);
     
     db.transaction(tx => {
       tx.executeSql(
-        `DELETE FROM notes WHERE photo_hash = ?`,
-        [photoHash],
+        `DELETE FROM notes WHERE id = ?`,
+        [noteId],
         (_, result) => {
           console.log('Note deleted successfully');
           resolve(result);
@@ -160,20 +158,20 @@ export const deleteNote = async (photoHash) => {
   });
 };
 
-// Get note by photo hash
-export const getNoteByHash = async (photoHash) => {
+// Get note by ID
+export const getNoteById = async (noteId) => {
   return new Promise((resolve, reject) => {
     const db = SQLite.openDatabase(DB_NAME);
     
     db.transaction(tx => {
       tx.executeSql(
-        `SELECT * FROM notes WHERE photo_hash = ?`,
-        [photoHash],
+        `SELECT * FROM notes WHERE id = ?`,
+        [noteId],
         (_, { rows }) => {
           resolve(rows._array[0] || null);
         },
         (_, error) => {
-          console.error('Get note by hash error:', error);
+          console.error('Get note by ID error:', error);
           reject(error);
         }
       );

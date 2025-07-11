@@ -1,14 +1,14 @@
 # MediMeld Edge
 
-A privacy-first offline health app for wound analysis and SOAP note generation using on-device AI.
+A privacy-first offline health app for wound analysis and SOAP note generation using basic on-device AI.
 
 ## Overview
 
 MediMeld Edge is a React Native tablet application that enables healthcare professionals to:
 
 - **Capture wound photos** with the device camera
-- **Classify wounds** using an on-device Vision Transformer
-- **Generate SOAP notes** using a quantized medical LLM
+- **Classify wounds** using a basic TensorFlow Lite model
+- **Generate SOAP notes** using template-based generation
 - **Store data locally** in SQLite for privacy
 - **Sync when online** via a FastAPI backend
 
@@ -17,9 +17,9 @@ MediMeld Edge is a React Native tablet application that enables healthcare profe
 ```mermaid
 graph TB
     A[Camera Capture] --> B[Image Processing]
-    B --> C[Wound Classifier<br/>ViT-small ONNX]
-    C --> D[Medical LLM<br/>llama.cpp 7B]
-    D --> E[SOAP Note Generation]
+    B --> C[Basic Wound Classifier<br/>TensorFlow Lite]
+    C --> D[Template-based SOAP<br/>Generation]
+    D --> E[SOAP Note Creation]
     E --> F[Local SQLite Storage]
     F --> G{Internet Available?}
     G -->|Yes| H[FastAPI Sync]
@@ -64,8 +64,7 @@ medimeld-edge/
 │   ├── utils/             # AI utilities
 │   └── package.json       # Node dependencies
 ├── models/                # AI models
-│   ├── wound_classifier.onnx  # ViT classifier
-│   ├── medllm.gguf           # Medical LLM
+│   ├── wound_classifier.tflite  # TensorFlow Lite classifier
 │   └── README.md             # Model setup
 └── .github/workflows/     # CI/CD
     └── ci.yml
@@ -102,8 +101,7 @@ npx expo start
 
 1. Download the AI models (see `models/README.md`)
 2. Place models in `models/` directory:
-   - `wound_classifier.onnx` (~85MB)
-   - `medllm.gguf` (~4.2GB)
+   - `wound_classifier.tflite` (~50MB)
 
 ## Configuration
 
@@ -131,11 +129,11 @@ const SERVER_URL = 'http://localhost:8000'; // Change for production
 - High-quality photo capture
 - Flash control
 - Gallery import
-- Image preprocessing
+- Basic image preprocessing
 
 ### AI Analysis
-- **Wound Classification**: 8 wound types, 4 severity levels
-- **SOAP Generation**: Medical-grade notes
+- **Wound Classification**: 4 wound types, 3 severity levels
+- **SOAP Generation**: Template-based medical notes
 - **Offline Processing**: No internet required
 
 ### Data Management
@@ -155,27 +153,27 @@ const SERVER_URL = 'http://localhost:8000'; // Change for production
 ### Data Protection
 - **No Image Upload**: Only photo hashes synced
 - **Local Processing**: All AI runs on-device
-- **Encrypted Storage**: SQLite with encryption
+- **Basic Encryption**: SQLite with simple encryption
 - **Hash-based IDs**: No personal data in syncs
 
 ### Compliance
 - **HIPAA Ready**: Privacy-first design
 - **GDPR Compliant**: Local data storage
-- **Medical Standards**: SOAP note format
-- **Audit Trail**: Complete sync history
+- **Medical Standards**: Basic SOAP note format
+- **Audit Trail**: Simple sync history
 
 ## AI Models
 
 ### Wound Classifier
-- **Model**: ViT-small-patch16-224
+- **Model**: TensorFlow Lite classifier
 - **Input**: 224x224 RGB image
 - **Output**: Wound type + severity
-- **Size**: ~85MB (quantized)
-- **Speed**: ~200ms inference
+- **Size**: ~50MB (optimized)
+- **Speed**: ~500ms inference
 
-### Medical LLM
-- **Model**: Meditron-7B or MedLlama2-7B
-- **Input**: Wound classification + prompt
-- **Output**: SOAP note text
-- **Size**: ~4.2GB (Q4_K_M)
-- **Speed**: ~2-5 seconds
+### SOAP Note Generation
+- **Method**: Template-based generation
+- **Input**: Wound classification + templates
+- **Output**: Basic SOAP note text
+- **Size**: <1MB (templates)
+- **Speed**: ~1 second

@@ -19,7 +19,6 @@ import { classifyWound, generateSOAPNote } from '../utils/aiUtils';
 const DiagnosisScreen = ({ imageUri, onDiagnosisComplete, onBack }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [diagnosis, setDiagnosis] = useState(null);
-  const [photoHash, setPhotoHash] = useState(null);
 
   useEffect(() => {
     if (imageUri) {
@@ -31,16 +30,6 @@ const DiagnosisScreen = ({ imageUri, onDiagnosisComplete, onBack }) => {
     setIsProcessing(true);
     
     try {
-      // Generate photo hash
-      const imageData = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const hash = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        imageData
-      );
-      setPhotoHash(hash);
-
       // Classify wound (simulated for now)
       const woundClassification = await classifyWound(imageUri);
       
@@ -48,7 +37,6 @@ const DiagnosisScreen = ({ imageUri, onDiagnosisComplete, onBack }) => {
       const soapNote = await generateSOAPNote(woundClassification);
       
       const diagnosisData = {
-        photo_hash: hash,
         wound_type: woundClassification.type,
         wound_severity: woundClassification.severity,
         soap_note: soapNote,
@@ -125,12 +113,6 @@ const DiagnosisScreen = ({ imageUri, onDiagnosisComplete, onBack }) => {
         <View style={styles.soapContainer}>
           <Text style={styles.soapText}>{diagnosis.soap_note}</Text>
         </View>
-      </View>
-
-      {/* Photo Hash */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Photo Hash</Text>
-        <Text style={styles.hashText}>{diagnosis.photo_hash}</Text>
       </View>
 
       {/* Save Button */}
@@ -256,9 +238,6 @@ const styles = StyleSheet.create({
   severitySEVERE: {
     color: '#FF3B30',
   },
-  severityCRITICAL: {
-    color: '#AF52DE',
-  },
   soapContainer: {
     backgroundColor: '#F2F2F7',
     borderRadius: 8,
@@ -268,11 +247,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1C1C1E',
     lineHeight: 20,
-  },
-  hashText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    fontFamily: 'monospace',
   },
   saveButton: {
     flexDirection: 'row',

@@ -51,11 +51,17 @@ async def sync_notes(notes: List[NoteData]):
         
         for note in notes:
             try:
-                await db_manager.save_note(note)
-                synced_count += 1
+                success = await db_manager.save_note(note)
+                if success:
+                    synced_count += 1
+                else:
+                    failed_notes.append({
+                        "note_id": f"note_{synced_count}",
+                        "error": "Database save failed"
+                    })
             except Exception as e:
                 failed_notes.append({
-                    "photo_hash": note.photo_hash,
+                    "note_id": f"note_{synced_count}",
                     "error": str(e)
                 })
         
