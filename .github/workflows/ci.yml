@@ -1,0 +1,257 @@
+name: MediMeld Edge CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Backend Testing
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run linting
+      run: |
+        pip install flake8 black isort
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        black --check .
+        isort --check-only .
+
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=. --cov-report=xml
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  # Mobile Testing
+  mobile-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run tests
+      run: npm test
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Run Bandit (Python security)
+      uses: python-security/bandit-action@v1
+      with:
+        path: ./backend
+        level: low
+
+    - name: Run npm audit
+      uses: actions/npm@v6
+      with:
+        args: audit --audit-level moderate
+        working-directory: ./mobile
+
+  # Build and Deploy Backend
+  deploy-backend:
+    needs: [backend-test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build Docker image
+      run: |
+        docker build -t medimeld-edge-backend:${{ github.sha }} .
+        docker tag medimeld-edge-backend:${{ github.sha }} medimeld-edge-backend:latest
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment commands here
+        # Example: kubectl apply -f k8s/staging/
+
+  # Build Mobile App
+  build-mobile:
+    needs: [mobile-test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Setup Expo
+      uses: expo/expo-github-action@v8
+      with:
+        expo-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+
+    - name: Build Android APK
+      run: |
+        eas build --platform android --non-interactive
+
+    - name: Build iOS IPA
+      run: |
+        eas build --platform ios --non-interactive
+
+  # Model Validation
+  validate-models:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install onnx onnxruntime transformers
+
+    - name: Validate ONNX model
+      run: |
+        python -c "
+        import onnx
+        model = onnx.load('models/wound_classifier.onnx')
+        onnx.checker.check_model(model)
+        print('ONNX model validation passed')
+        "
+
+    - name: Check model sizes
+      run: |
+        echo "Checking model file sizes..."
+        ls -lh models/
+        
+        # Ensure models are within size limits
+        WOUND_SIZE=$(stat -c%s models/wound_classifier.onnx 2>/dev/null || stat -f%z models/wound_classifier.onnx)
+        LLM_SIZE=$(stat -c%s models/medllm.gguf 2>/dev/null || stat -f%z models/medllm.gguf)
+        
+        if [ $WOUND_SIZE -gt 100000000 ]; then
+          echo "Warning: Wound classifier is larger than 100MB"
+        fi
+        
+        if [ $LLM_SIZE -gt 5000000000 ]; then
+          echo "Warning: LLM is larger than 5GB"
+        fi
+
+  # Documentation
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Check documentation
+      run: |
+        # Check if README files exist
+        test -f README.md || exit 1
+        test -f backend/README.md || exit 1
+        test -f mobile/README.md || exit 1
+        test -f models/README.md || exit 1
+        
+        echo "All documentation files present"
+
+    - name: Validate API documentation
+      run: |
+        cd backend
+        python -c "
+        from fastapi import FastAPI
+        from main import app
+        print('FastAPI app structure validated')
+        "
+
+  # Notifications
+  notify:
+    needs: [backend-test, mobile-test, security-scan, validate-models, docs]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "One or more CI checks failed"
+        # Add notification logic here (Slack, email, etc.)
+
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "All CI checks passed successfully"
+        # Add notification logic here 
